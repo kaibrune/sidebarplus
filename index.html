@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sidebar+</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <form id="settings">
+            <input type="text" name="" id="zip">
+            <select id="country">
+                <option value="DE">DE</option>
+                <option value="US">US</option>
+            </select>
+            <select id="lang">
+                <option value="de">DE</option>
+                <option value="en">EN</option>
+            </select>
+            <select id="newsSource">
+                <option value="faz">FAZ</option>
+                <option value="cnn">CNN</option>
+            </select>
+            <input type="text" name="" id="apiKeyWeather">
+            <input type="text" name="" id="apiKeyNews">
+            <button type="submit">Submit</button>
+        </form>
+
+
+        <div class="bub1">
+            <span id="clock"></span>
+        </div>
+
+        <img id="weatherIcon" alt="">
+        <span id="weatherText"></span><br>
+
+        <img id="newsImg" alt="">
+
+    </div>
+
+
+    <script src="js/jquery.js"></script>
+    <script>
+
+        $(document).ready(function () {
+            function getdate() {
+                var today = new Date();
+                var h = today.getHours();
+                var m = today.getMinutes();
+                var s = today.getSeconds();
+                if (s < 10) {
+                    s = "0" + s;
+                }
+                if (m < 10) {
+                    m = "0" + m;
+                }
+                $("#clock").text(h + " : " + m + " : " + s);
+                setTimeout(function () { getdate() }, 500);
+            }
+
+            getdate();
+
+
+            function setData(zip, country, lang, newsSource, apiKeyWeather, apiKeyNews) {
+                localStorage.setItem('zipCode', zip);
+                localStorage.setItem('countryCode', country);
+                localStorage.setItem('langCode', lang);
+                localStorage.setItem('newsSource', newsSource);
+                localStorage.setItem('apiKeyWeather', apiKeyWeather);
+                localStorage.setItem('apiKeyNews', apiKeyNews);
+            }
+
+            var lat;
+            var lon;
+            var zipCode = localStorage.getItem('zipCode');
+            var countryCode = localStorage.getItem('countryCode');
+            var langCode = localStorage.getItem('langCode');
+            var newsSource = localStorage.getItem('newsSource');
+
+            var apiKeyWeather = localStorage.getItem('apiKeyWeather');
+            var apiKeyNews = localStorage.getItem('apiKeyNews');
+
+            function checkData() {
+
+                if (zipCode.length > 0 && countryCode.length > 0 && langCode.length > 0 && newsSource.length > 0) {
+                    getCity(zipCode, countryCode)
+                    getNews(langCode, newsSource);
+                    $("#zip").val(zipCode)
+                    $("#country").val(countryCode)
+                    $("#lang").val(langCode)
+                    $("#newsSource").val(newsSource)
+                    $("#apiKeyWeather").val(apiKeyWeather)
+                    $("#apiKeyNews").val(apiKeyNews)
+
+                } else {
+                    console.log("no")
+                }
+            }
+
+
+            function getCity(zipInput, countryInput) {
+
+
+
+                $.getJSON("https://api.openweathermap.org/geo/1.0/zip?zip=" + zipInput + "," + countryInput + "&appid=" + apiKeyWeather, function (data) {
+
+                    lat = data["lat"];
+                    lon = data["lon"];
+
+                    getWeather(lat, lon)
+
+                });
+
+            }
+
+            function getWeather(lat, lon) {
+
+                $.getJSON("https://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&units=metric&lang=" + langCode + "&appid=" + apiKeyWeather, function (data) {
+
+                    $('#weatherText').text(data["weather"][0]["description"]);
+                    $('#weatherIcon').attr('src', "http://openweathermap.org/img/wn/" + data["weather"][0]["icon"] + "@2x.png");
+
+
+
+                    /*                     city_name = data["name"];
+                                        country_name = data["sys"]["country"];
+                                        weather_description = data["weather"][0]["description"];
+                                        temp = data["main"]["temp"];
+                                        pressure = data["main"]["pressure"];
+                                        wind_speed = data["wind"]["speed"]; */
+
+                })
+
+            }
+
+            function getNews(langCode, newsSource) {
+
+                $.getJSON("http://api.mediastack.com/v1/news?access_key=" + apiKeyNews + "&sources=" + newsSource + "&languages=" + langCode + "&categories=general&limit=10", function (data) {
+
+
+                    for (i = 0; i < 10; i++) {
+                        $('body').append(data["data"][i]["title"] + "</br>")
+
+                        $('#newsImg').attr('src', data["data"][i]["image"]);
+                    }
+                })
+
+            }
+
+
+
+            if (localStorage.getItem("zipCode") === null || localStorage.getItem("countryCode") === null || localStorage.getItem("langCode") === null || localStorage.getItem("newsSource") === null) {
+                localStorage.setItem('zipCode', "");
+                localStorage.setItem('countryCode', "");
+                localStorage.setItem('langCode', "");
+                localStorage.setItem('newsSource', "");
+                localStorage.setItem('apiKeyWeather', "");
+                localStorage.setItem('apiKeyNews', "");
+            } else {
+                checkData();
+            }
+
+            $("#settings").on('submit', function () {
+                setData($("#zip").val(), $("#country").val(), $("#lang").val(), $("#newsSource").val(), $("#apiKeyWeather").val(), $("#apiKeyNews").val());
+                location.reload();
+            });
+
+
+
+
+
+
+        });
+
+
+    </script>
+
+
+
+</body>
+
+</html>
